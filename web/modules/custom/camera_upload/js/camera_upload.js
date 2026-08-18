@@ -155,6 +155,21 @@
     });
   }
 
+  /**
+   * Detects mobile/touch devices (phones and tablets).
+   *
+   * On these devices the native file input with capture="environment" opens
+   * the built-in camera app, which is both more reliable and a better UX
+   * than the getUserMedia overlay. Crucially, iOS Safari does not allow
+   * programmatically setting input.files via DataTransfer, so the
+   * getUserMedia + push approach cannot work there — the native input path
+   * lets the browser set the file itself and fire a genuine change event.
+   */
+  function isMobileDevice() {
+    return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+      || (navigator.maxTouchPoints > 1 && /Mac/i.test(navigator.userAgent));
+  }
+
   Drupal.behaviors.cameraUpload = {
     attach(context) {
       once('camera-upload-capture', '.camera-upload-capture-button', context).forEach((button) => {
@@ -165,10 +180,22 @@
             return;
           }
 
-          // Try the in-browser camera first (works on desktop and mobile).
-          // If getUserMedia is unavailable or denied, fall back to clicking
-          // the native file input (which has capture="environment" set) and
-          // let core's own change handler perform the upload.
+          // On mobile devices, go straight to the native file input (which
+          // has capture="environment"). The browser opens the camera, sets
+          // the file natively and fires a real change event, so core's
+          // fileAutoUpload handler performs the AJAX upload without any
+          // programmatic file assignment.
+          if (isMobileDevice()) {
+            const input = wrapper.querySelector('input[type="file"]');
+            if (input) {
+              input.click();
+            }
+            return;
+          }
+
+          // On desktop, use the in-browser camera (getUserMedia) and push
+          // the snapshot into the managed_file input. Fall back to the
+          // native input if getUserMedia is unavailable or denied.
           captureWithGetUserMedia()
             .then((file) => pushFileAndUpload(wrapper, file))
             .catch(() => captureWithNativeInput(wrapper))
