@@ -642,12 +642,13 @@ display:
       path: resident-notes
       menu:
         type: normal
-        title: 'Resident Notes'
+        title: 'List Resident Notes'
         description: ''
-        weight: 0
+        weight: -50
+        enabled: true
         expanded: false
         menu_name: main
-        parent: ''
+        parent: 'menu_link_content:46d388c3-6b48-4738-8406-6dfc3ff0017f'
         context: '0'
     cache_metadata:
       max-age: -1

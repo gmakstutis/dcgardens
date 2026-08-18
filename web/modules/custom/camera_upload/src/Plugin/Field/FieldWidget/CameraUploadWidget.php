@@ -79,12 +79,28 @@ class CameraUploadWidget extends ImageWidget {
     $field_name = $this->fieldDefinition->getName();
     $parents = $form['#parents'];
 
-    // Ensure items_count is initialized in field state (WidgetBase::form()
-    // does this, but only if the field state doesn't exist yet).
+    // Ensure items_count is initialised in field state to the number of
+    // items that actually reference a file. WidgetBase::form() initialises
+    // it to count($items), which for an empty field is 0 and works fine,
+    // but for an existing entity with N stored files we want items_count
+    // to start at N so all existing files render plus one empty upload row.
     $field_state = static::getWidgetState($parents, $field_name, $form_state);
     if (!isset($field_state['items_count'])) {
-      $field_state['items_count'] = count($items);
+      $uploaded = 0;
+      foreach ($items as $item) {
+        if (!empty($item->target_id)) {
+          $uploaded++;
+        }
+      }
+      $field_state['items_count'] = $uploaded;
       static::setWidgetState($parents, $field_name, $form_state, $field_state);
+    }
+
+    // Load items from field state (uploaded files that have not been saved to
+    // the entity yet). This mirrors FileWidget::formMultipleElements() so
+    // files uploaded via AJAX persist across form rebuilds.
+    if (isset($field_state['items'])) {
+      $items->setValue($field_state['items']);
     }
 
     $cardinality = $this->fieldDefinition->getFieldStorageDefinition()->getCardinality();
@@ -92,10 +108,17 @@ class CameraUploadWidget extends ImageWidget {
     $is_multiple = $is_unlimited || $cardinality > 1;
 
     // Determine the number of widgets to display. For unlimited cardinality
-    // use items_count from field state so the "Add another item" button can
-    // grow the form; otherwise use the cardinality.
+    // the row count is driven by items_count (the number of uploaded items)
+    // so the trailing-empty-row block always adds exactly one empty field at
+    // the end. Otherwise use the cardinality.
     if ($is_unlimited) {
-      $max = $field_state['items_count'] ?? count($items);
+      $max = $field_state['items_count'];
+      // Auto-uploads can grow $items beyond items_count (which is only
+      // bumped by addMoreSubmit); keep $max at least as large as the
+      // highest populated delta so _weight ranges and #max_delta stay sane.
+      if (count($items) - 1 > $max) {
+        $max = count($items) - 1;
+      }
     }
     else {
       $max = $cardinality - 1;
@@ -105,18 +128,15 @@ class CameraUploadWidget extends ImageWidget {
     $description = $this->getFilteredDescription();
 
     $id_prefix = implode('-', array_merge($parents, [$field_name]));
-    // The AJAX wrapper ID must match the one set by FileWidget::processMultiple(),
-    // which uses $element['#id'] . '-ajax-wrapper'. The element #id is
-    // 'edit-<id-prefix-with-underscores-replaced-by-hyphens>'.
-    $wrapper_id = 'edit-' . str_replace('_', '-', $id_prefix) . '-ajax-wrapper';
 
     $elements = [];
 
+    // Render one row per existing (uploaded) item. The empty upload row is
+    // added by the trailing-empty-row block below, so the form always ends
+    // with exactly one empty field when more uploads are allowed. This
+    // matches the FileWidget behaviour the rest of the widget relies on.
     $delta = 0;
     foreach ($items as $item) {
-      if ($delta > $max) {
-        break;
-      }
       $element = [
         '#title' => $title,
         '#description' => $description,
@@ -173,6 +193,7 @@ class CameraUploadWidget extends ImageWidget {
       $elements['#process'] = [
         [\Drupal\file\Plugin\Field\FieldWidget\FileWidget::class, 'processMultiple'],
         [static::class, 'hideWeightFields'],
+        [static::class, 'addMoreButtonProcess'],
       ];
       $elements['#title'] = $title;
       $elements['#description'] = $description;
@@ -193,8 +214,11 @@ class CameraUploadWidget extends ImageWidget {
     }
 
     // Add the "Add another item" button for unlimited cardinality fields,
-    // using WidgetBase's standard AJAX submit/callback. The wrapper ID
-    // matches the one FileWidget::processMultiple() sets via #prefix.
+    // using WidgetBase's standard AJAX submit/callback. The wrapper ID is
+    // filled in by addMoreButtonProcess() (which runs after
+    // FileWidget::processMultiple sets #prefix with the real, AJAX-unique
+    // #id) because Html::getUniqueId appends a random suffix on AJAX
+    // requests that cannot be predicted at build time.
     if ($is_unlimited && !$form_state->isProgrammed()) {
       $elements['add_more'] = [
         '#type' => 'submit',
@@ -202,11 +226,11 @@ class CameraUploadWidget extends ImageWidget {
         '#value' => $this->t('Add another item'),
         '#attributes' => ['class' => ['field-add-more-submit', 'use-ajax']],
         '#button_type' => 'small',
-        '#limit_validation_errors' => [],
+        '#limit_validation_errors' => [array_merge($parents, [$field_name])],
         '#submit' => [[static::class, 'addMoreSubmit']],
         '#ajax' => [
           'callback' => [static::class, 'addMoreAjax'],
-          'wrapper' => $wrapper_id,
+          'wrapper' => '',
           'effect' => 'fade',
         ],
         '#weight' => 1000,
@@ -233,7 +257,7 @@ class CameraUploadWidget extends ImageWidget {
       '#tag' => 'label',
       '#value' => $this->t('Take Photo'),
       '#attributes' => [
-        'class' => ['camera-upload-capture-button', 'button'],
+        'class' => ['camera-upload-capture-button', 'btn', 'btn-success', 'mb-4'],
         'data-camera-upload-delta' => $delta,
       ],
       '#weight' => -20,
@@ -255,10 +279,13 @@ class CameraUploadWidget extends ImageWidget {
   /**
    * Submission handler for the "Add another item" button.
    *
-   * Increments items_count like WidgetBase::addMoreSubmit, but also clears
-   * stale file upload input for this field so the managed_file value
-   * callback doesn't try to reprocess a previous upload (which causes a
-   * TypeError when #multiple is FALSE).
+   * Captures any files uploaded in this submission into field_state['items']
+   * (mirroring FileWidget::submit, which only runs for the upload/remove
+   * button) so that photos selected via "Take Photo" are preserved when the
+   * form rebuilds. Without this, the managed_file value callback uploads
+   * the file during form processing but the FID never reaches
+   * field_state['items'], and formMultipleElements() drops the row on the
+   * rebuild — so "Add another item" appears to do nothing.
    */
   public static function addMoreSubmit(array $form, FormStateInterface $form_state) {
     $button = $form_state->getTriggeringElement();
@@ -266,27 +293,35 @@ class CameraUploadWidget extends ImageWidget {
     $field_name = $element['#field_name'];
     $parents = $element['#field_parents'];
 
-    // Increment the items count.
     $field_state = static::getWidgetState($parents, $field_name, $form_state);
-    $field_state['items_count'] = ($field_state['items_count'] ?? 0) + 1;
+
+    // Capture files uploaded in this submission (valueCallback has already
+    // run for every delta and populated form_state values with fids). Filter
+    // out empty rows and split multi-fid items, matching FileWidget::submit.
+    $field_values = NestedArray::getValue($form_state->getValues(), array_merge($parents, [$field_name]));
+    $submitted_values = [];
+    if (is_array($field_values)) {
+      foreach ($field_values as $delta => $submitted_value) {
+        if (is_array($submitted_value) && !empty($submitted_value['fids'])) {
+          foreach ($submitted_value['fids'] as $fid) {
+            $new_value = $submitted_value;
+            $new_value['fids'] = [$fid];
+            $submitted_values[] = $new_value;
+          }
+        }
+      }
+    }
+    $field_state['items'] = array_values($submitted_values);
+
+    // Keep items_count consistent with the number of uploaded items so
+    // downstream code (e.g. WidgetBase::addMoreAjax) sees a sane value.
+    $field_state['items_count'] = count($field_state['items']);
     static::setWidgetState($parents, $field_name, $form_state, $field_state);
 
-    // Clear stale file upload input for this field so the managed_file
-    // value callback does not try to reprocess a previous upload during
-    // the form rebuild. The uploaded files are already stored as FIDs in
-    // the field state and will be preserved.
-    $user_input = $form_state->getUserInput();
-    $field_input = NestedArray::getValue($user_input, array_merge($parents, [$field_name]));
-    if (is_array($field_input)) {
-      foreach ($field_input as $delta => $value) {
-        if (isset($value['upload']) && $value['upload'] === '') {
-          continue;
-        }
-        $field_input[$delta]['upload'] = '';
-      }
-      NestedArray::setValue($user_input, array_merge($parents, [$field_name]), $field_input);
-      $form_state->setUserInput($user_input);
-    }
+    // Clear user input for the field (like FileWidget::submit) so the
+    // rebuilt form doesn't reprocess stale per-delta input against
+    // re-indexed deltas.
+    NestedArray::setValue($form_state->getUserInput(), array_merge($parents, [$field_name]), NULL);
 
     $form_state->setRebuild();
   }
@@ -299,6 +334,28 @@ class CameraUploadWidget extends ImageWidget {
    */
   public static function addMoreAjax(array $form, FormStateInterface $form_state) {
     return \Drupal\Core\Field\WidgetBase::addMoreAjax($form, $form_state);
+  }
+
+  /**
+   * Form API #process callback that runs after FileWidget::processMultiple().
+   *
+   * Sets the "Add another item" button's AJAX wrapper to the real wrapper ID
+   * from the parent element's #prefix, which processMultiple built using the
+   * AJAX-unique #id. Html::getUniqueId() appends a random suffix on AJAX
+   * requests, so the wrapper ID cannot be hardcoded at build time.
+   */
+  public static function addMoreButtonProcess(array $element, FormStateInterface $form_state, array &$form) {
+    if (isset($element['add_more']['#ajax']['wrapper'])) {
+      // FileWidget::processMultiple sets #prefix to
+      // '<div id="<wrapper-id>">'. Extract that id.
+      if (preg_match('/<div id="([^"]+)"/', $element['#prefix'] ?? '', $m)) {
+        $element['add_more']['#ajax']['wrapper'] = $m[1];
+      }
+      elseif (!empty($element['#id'])) {
+        $element['add_more']['#ajax']['wrapper'] = $element['#id'] . '-ajax-wrapper';
+      }
+    }
+    return $element;
   }
 
   /**

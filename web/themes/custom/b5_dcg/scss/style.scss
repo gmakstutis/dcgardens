@@ -7,3 +7,8 @@
 
 // Include bootstrap.
 @import '../../../../themes/contrib/bootstrap5/scss/style';
+
+// Hide the "Revision information" panel on node add/edit forms.
+[data-drupal-selector="edit-revision-information"] {
+  display: none !important;
+}

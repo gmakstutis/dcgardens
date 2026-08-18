@@ -2,7 +2,11 @@ uuid: 49ebbf38-b402-4353-9ff4-cb8f8284c2f4
 langcode: en-gb
 status: true
 dependencies:
+  config:
+    - node.type.resident_notes
+    - node.type.site_record
   module:
+    - node
     - system
 _core:
   default_config_hash: dJ0L2DNSj5q6XVZAGsuVDpJTh5UeYkIPwKrUOOpr8YI
@@ -12,3 +16,7 @@ weight: 1
 is_admin: false
 permissions:
   - 'access content'
+  - 'create resident_notes content'
+  - 'create site_record content'
+  - 'edit own resident_notes content'
+  - 'edit own site_record content'

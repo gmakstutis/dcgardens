@@ -1,0 +1,14 @@
+uuid: e784280c-961d-424f-8c85-c3ef2c6a767f
+langcode: en-gb
+status: true
+dependencies:
+  config:
+    - user.role.dc_administrator
+  module:
+    - user
+id: user_remove_role_action.dc_administrator
+label: 'Remove the DC Administrator role from the selected user(s)'
+type: user
+plugin: user_remove_role_action
+configuration:
+  rid: dc_administrator

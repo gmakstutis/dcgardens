@@ -1,0 +1,32 @@
+uuid: ab085db7-98ce-40e6-9187-f24d86106ee0
+langcode: en-gb
+status: true
+dependencies:
+  config:
+    - node.type.resident_notes
+    - node.type.site_record
+    - node.type.sites
+    - node.type.work_type
+  module:
+    - node
+id: dc_administrator
+label: 'DC Administrator'
+weight: 2
+is_admin: false
+permissions:
+  - 'create sites content'
+  - 'create work_type content'
+  - 'delete any resident_notes content'
+  - 'delete any site_record content'
+  - 'delete any sites content'
+  - 'delete any work_type content'
+  - 'delete own resident_notes content'
+  - 'delete own site_record content'
+  - 'delete own sites content'
+  - 'delete own work_type content'
+  - 'edit any resident_notes content'
+  - 'edit any site_record content'
+  - 'edit any sites content'
+  - 'edit any work_type content'
+  - 'edit own sites content'
+  - 'edit own work_type content'

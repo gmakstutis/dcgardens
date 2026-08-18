@@ -27,6 +27,7 @@ module:
   layout_discovery: 0
   link: 0
   locale: 0
+  mailsystem: 0
   menu_link_content: 0
   menu_ui: 0
   meta_position: 0

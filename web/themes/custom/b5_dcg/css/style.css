@@ -12864,4 +12864,8 @@ code {
   overflow-y: auto;
 }
 
+[data-drupal-selector="edit-revision-information"] {
+  display: none !important;
+}
+
 /*# sourceMappingURL=style.css.map */
