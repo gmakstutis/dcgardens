@@ -70,20 +70,21 @@ class CameraUploadWidget extends ImageWidget {
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
     $element = parent::formElement($items, $delta, $element, $form, $form_state);
 
-    // Add a "Take Photo" button. It does not submit the form; the JS
-    // behaviour clicks the managed_file's own file input, which already has
-    // core's upload + AJAX handlers bound to it. Whether the button is shown
-    // is decided in processCaptureAttribute() based on the final FIDs.
+    // Add a "Take Photo" button rendered as a <label>. On mobile (especially
+    // iOS Safari) calling input.click() from JS within a button handler is
+    // blocked because it is not treated as a user gesture. A <label for="...">
+    // pointing at the file input is a native user gesture, so iOS opens the
+    // camera reliably. The `for` attribute is set in processCaptureAttribute()
+    // once the upload input's ID is known.
     $element['camera_capture'] = [
-      '#type' => 'button',
+      '#type' => 'html_tag',
+      '#tag' => 'label',
       '#value' => $this->t('Take Photo'),
       '#attributes' => [
-        'class' => ['camera-upload-capture-button'],
+        'class' => ['camera-upload-capture-button', 'button'],
         'data-camera-upload-delta' => $delta,
       ],
       '#weight' => -20,
-      '#limit_validation_errors' => [],
-      '#ajax' => NULL,
     ];
 
     // Mark the managed_file element so our #process callback can find it and
@@ -113,9 +114,14 @@ class CameraUploadWidget extends ImageWidget {
       // event reliably on a multiple+capture input, which prevents the AJAX
       // upload from running after a photo is taken. Force single-file mode
       // here so the browser opens the camera for one photo at a time and
-      // fires change correctly; the widget's "Add another item" row lets
-      // the user add more.
+      // fires change correctly.
       $element['upload']['#multiple'] = FALSE;
+
+      // Link the "Take Photo" label to this input so clicking it is a native
+      // user gesture that opens the camera on iOS.
+      if (isset($element['camera_capture']) && !empty($element['upload']['#id'])) {
+        $element['camera_capture']['#attributes']['for'] = $element['upload']['#id'];
+      }
     }
 
     // Hide the "Take Photo" button when this row already has an uploaded file.

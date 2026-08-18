@@ -174,28 +174,22 @@
     attach(context) {
       once('camera-upload-capture', '.camera-upload-capture-button', context).forEach((button) => {
         button.addEventListener('click', (e) => {
+          // On mobile devices, do nothing here — the label's native `for`
+          // attribute already opens the file input (camera) as a user
+          // gesture, which is required by iOS Safari. Let the default
+          // label behaviour proceed and core's AJAX handle the upload.
+          if (isMobileDevice()) {
+            return;
+          }
+
+          // On desktop, prevent the label from also opening the file picker
+          // (we'll use the in-browser camera instead) and run getUserMedia.
           e.preventDefault();
           const wrapper = button.closest('.js-form-managed-file');
           if (!wrapper) {
             return;
           }
 
-          // On mobile devices, go straight to the native file input (which
-          // has capture="environment"). The browser opens the camera, sets
-          // the file natively and fires a real change event, so core's
-          // fileAutoUpload handler performs the AJAX upload without any
-          // programmatic file assignment.
-          if (isMobileDevice()) {
-            const input = wrapper.querySelector('input[type="file"]');
-            if (input) {
-              input.click();
-            }
-            return;
-          }
-
-          // On desktop, use the in-browser camera (getUserMedia) and push
-          // the snapshot into the managed_file input. Fall back to the
-          // native input if getUserMedia is unavailable or denied.
           captureWithGetUserMedia()
             .then((file) => pushFileAndUpload(wrapper, file))
             .catch(() => captureWithNativeInput(wrapper))
