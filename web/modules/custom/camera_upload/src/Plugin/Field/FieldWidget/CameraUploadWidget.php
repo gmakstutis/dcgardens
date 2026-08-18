@@ -3,6 +3,7 @@
 namespace Drupal\camera_upload\Plugin\Field\FieldWidget;
 
 use Drupal\Component\Utility\Html;
+use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Field\Attribute\FieldWidget;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
@@ -188,7 +189,7 @@ class CameraUploadWidget extends ImageWidget {
         '#attributes' => ['class' => ['field-add-more-submit']],
         '#button_type' => 'small',
         '#limit_validation_errors' => [],
-        '#submit' => [[\Drupal\Core\Field\WidgetBase::class, 'addMoreSubmit']],
+        '#submit' => [[static::class, 'addMoreSubmit']],
         '#ajax' => [
           'callback' => [\Drupal\Core\Field\WidgetBase::class, 'addMoreAjax'],
           'wrapper' => $wrapper_id,
@@ -230,6 +231,47 @@ class CameraUploadWidget extends ImageWidget {
     $element['#process'][] = [static::class, 'processCaptureAttribute'];
 
     return $element;
+  }
+
+  /**
+   * Submission handler for the "Add another item" button.
+   *
+   * Increments items_count like WidgetBase::addMoreSubmit, but also clears
+   * stale file upload input for this field so the managed_file value
+   * callback doesn't try to reprocess a previous upload (which causes a
+   * TypeError when #multiple is FALSE).
+   */
+  public static function addMoreSubmit(array $form, FormStateInterface $form_state) {
+    $button = $form_state->getTriggeringElement();
+    $element = NestedArray::getValue($form, array_slice($button['#array_parents'], 0, -1));
+    $field_name = $element['#field_name'];
+    $parents = $element['#field_parents'];
+
+    // Increment the items count.
+    $field_state = static::getWidgetState($parents, $field_name, $form_state);
+    $field_state['items_count'] = ($field_state['items_count'] ?? 0) + 1;
+    static::setWidgetState($parents, $field_name, $form_state, $field_state);
+
+    // Clear stale file upload input for this field so the managed_file
+    // value callback does not try to reprocess a previous upload during
+    // the form rebuild. The uploaded files are already stored as FIDs in
+    // the field state and will be preserved.
+    $user_input = $form_state->getUserInput();
+    $field_input = NestedArray::getValue($user_input, array_merge($parents, [$field_name]));
+    if (is_array($field_input)) {
+      foreach ($field_input as $delta => $value) {
+        if (isset($value['upload']) && $value['upload'] === '') {
+          // Already empty, skip.
+          continue;
+        }
+        // Clear the upload key to prevent reprocessing.
+        $field_input[$delta]['upload'] = '';
+      }
+      NestedArray::setValue($user_input, array_merge($parents, [$field_name]), $field_input);
+      $form_state->setUserInput($user_input);
+    }
+
+    $form_state->setRebuild();
   }
 
   /**
