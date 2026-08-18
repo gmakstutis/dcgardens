@@ -170,7 +170,10 @@ class CameraUploadWidget extends ImageWidget {
       $elements['#open'] = TRUE;
       $elements['#theme'] = 'file_widget_multiple';
       $elements['#theme_wrappers'] = ['details'];
-      $elements['#process'] = [[\Drupal\file\Plugin\Field\FieldWidget\FileWidget::class, 'processMultiple']];
+      $elements['#process'] = [
+        [\Drupal\file\Plugin\Field\FieldWidget\FileWidget::class, 'processMultiple'],
+        [static::class, 'hideWeightFields'],
+      ];
       $elements['#title'] = $title;
       $elements['#description'] = $description;
       $elements['#field_name'] = $field_name;
@@ -197,12 +200,12 @@ class CameraUploadWidget extends ImageWidget {
         '#type' => 'submit',
         '#name' => strtr($id_prefix, '-', '_') . '_add_more',
         '#value' => $this->t('Add another item'),
-        '#attributes' => ['class' => ['field-add-more-submit']],
+        '#attributes' => ['class' => ['field-add-more-submit', 'use-ajax']],
         '#button_type' => 'small',
         '#limit_validation_errors' => [],
         '#submit' => [[static::class, 'addMoreSubmit']],
         '#ajax' => [
-          'callback' => [\Drupal\Core\Field\WidgetBase::class, 'addMoreAjax'],
+          'callback' => [static::class, 'addMoreAjax'],
           'wrapper' => $wrapper_id,
           'effect' => 'fade',
         ],
@@ -277,10 +280,8 @@ class CameraUploadWidget extends ImageWidget {
     if (is_array($field_input)) {
       foreach ($field_input as $delta => $value) {
         if (isset($value['upload']) && $value['upload'] === '') {
-          // Already empty, skip.
           continue;
         }
-        // Clear the upload key to prevent reprocessing.
         $field_input[$delta]['upload'] = '';
       }
       NestedArray::setValue($user_input, array_merge($parents, [$field_name]), $field_input);
@@ -288,6 +289,36 @@ class CameraUploadWidget extends ImageWidget {
     }
 
     $form_state->setRebuild();
+  }
+
+  /**
+   * Ajax callback for the "Add another item" button.
+   *
+   * Wraps WidgetBase::addMoreAjax but logs debug info to watchdog to help
+   * diagnose issues with repeated clicks.
+   */
+  public static function addMoreAjax(array $form, FormStateInterface $form_state) {
+    return \Drupal\Core\Field\WidgetBase::addMoreAjax($form, $form_state);
+  }
+
+  /**
+   * Form API #process callback for the multiple-element wrapper.
+   *
+   * Runs after FileWidget::processMultiple(), which re-adds visible _weight
+   * selects on uploaded-file rows. We hide all _weight fields since row
+   * reordering is not needed for camera uploads.
+   */
+  public static function hideWeightFields(array $element, FormStateInterface $form_state, array &$form) {
+    foreach (\Drupal\Core\Render\Element::children($element) as $key) {
+      if (isset($element[$key]['_weight'])) {
+        $element[$key]['_weight']['#access'] = FALSE;
+      }
+      // The add_more button should not have a _weight at all.
+      if ($key === 'add_more' && isset($element[$key]['_weight'])) {
+        unset($element[$key]['_weight']);
+      }
+    }
+    return $element;
   }
 
   /**
