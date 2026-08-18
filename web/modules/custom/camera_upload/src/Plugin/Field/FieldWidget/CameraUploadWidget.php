@@ -108,6 +108,14 @@ class CameraUploadWidget extends ImageWidget {
   public static function processCaptureAttribute(array $element, FormStateInterface $form_state, array &$form) {
     if (isset($element['upload'])) {
       $element['upload']['#attributes']['capture'] = 'environment';
+      // The core file/image widget sets #multiple on the upload input for
+      // unlimited cardinality fields. iOS Safari does not fire a change
+      // event reliably on a multiple+capture input, which prevents the AJAX
+      // upload from running after a photo is taken. Force single-file mode
+      // here so the browser opens the camera for one photo at a time and
+      // fires change correctly; the widget's "Add another item" row lets
+      // the user add more.
+      $element['upload']['#multiple'] = FALSE;
     }
 
     // Hide the "Take Photo" button when this row already has an uploaded file.
