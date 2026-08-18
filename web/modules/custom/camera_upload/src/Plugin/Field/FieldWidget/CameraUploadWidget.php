@@ -102,7 +102,10 @@ class CameraUploadWidget extends ImageWidget {
     $description = $this->getFilteredDescription();
 
     $id_prefix = implode('-', array_merge($parents, [$field_name]));
-    $wrapper_id = Html::getUniqueId($id_prefix . '-add-more-wrapper');
+    // The AJAX wrapper ID must match the one set by FileWidget::processMultiple(),
+    // which uses $element['#id'] . '-ajax-wrapper'. The element #id is
+    // 'edit-<id-prefix-with-underscores-replaced-by-hyphens>'.
+    $wrapper_id = 'edit-' . str_replace('_', '-', $id_prefix) . '-ajax-wrapper';
 
     $elements = [];
 
@@ -175,11 +178,9 @@ class CameraUploadWidget extends ImageWidget {
     }
 
     // Add the "Add another item" button for unlimited cardinality fields,
-    // using WidgetBase's standard AJAX submit/callback.
+    // using WidgetBase's standard AJAX submit/callback. The wrapper ID
+    // matches the one FileWidget::processMultiple() sets via #prefix.
     if ($is_unlimited && !$form_state->isProgrammed()) {
-      $elements['#prefix'] = '<div id="' . $wrapper_id . '">';
-      $elements['#suffix'] = '</div>';
-
       $elements['add_more'] = [
         '#type' => 'submit',
         '#name' => strtr($id_prefix, '-', '_') . '_add_more',
