@@ -79,10 +79,12 @@ class CameraUploadWidget extends ImageWidget {
     $field_name = $this->fieldDefinition->getName();
     $parents = $form['#parents'];
 
-    // Load the items for form rebuilds from the field state.
+    // Ensure items_count is initialized in field state (WidgetBase::form()
+    // does this, but only if the field state doesn't exist yet).
     $field_state = static::getWidgetState($parents, $field_name, $form_state);
-    if (isset($field_state['items'])) {
-      $items->setValue($field_state['items']);
+    if (!isset($field_state['items_count'])) {
+      $field_state['items_count'] = count($items);
+      static::setWidgetState($parents, $field_name, $form_state, $field_state);
     }
 
     $cardinality = $this->fieldDefinition->getFieldStorageDefinition()->getCardinality();
@@ -154,6 +156,10 @@ class CameraUploadWidget extends ImageWidget {
       $element = $this->formSingleElement($items, $delta, $element, $form, $form_state);
       if ($element) {
         $element['#required'] = ($element['#required'] && $delta == 0);
+        // Hide the weight select on the empty (upload) row.
+        if ($is_multiple && isset($element['_weight'])) {
+          $element['_weight']['#access'] = FALSE;
+        }
         $elements[$delta] = $element;
       }
     }
