@@ -132,6 +132,11 @@ class CameraUploadWidget extends ImageWidget {
             '#weight' => 100,
           ];
         }
+        // Hide the weight select on empty (no file) rows — it's only needed
+        // for reordering rows that have uploaded files.
+        if (empty($item->target_id)) {
+          $element['_weight']['#access'] = FALSE;
+        }
         $elements[$delta] = $element;
         $delta++;
       }
@@ -227,6 +232,11 @@ class CameraUploadWidget extends ImageWidget {
 
     $element['#attributes']['class'][] = 'camera-upload-managed-file';
     $element['#attached']['library'][] = 'camera_upload/capture';
+
+    // Force single-file mode here (before valueCallback runs) so the
+    // managed_file value callback handles a single UploadedFile rather
+    // than trying array_filter() on it as if #multiple were TRUE.
+    $element['#multiple'] = FALSE;
 
     $element['#process'][] = [static::class, 'processCaptureAttribute'];
 
