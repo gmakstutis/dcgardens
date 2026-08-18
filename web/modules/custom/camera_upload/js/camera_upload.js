@@ -2,15 +2,15 @@
  * @file
  * Provides the "Take Photo" behaviour for Camera Upload fields.
  *
- * The "Take Photo" button opens the device camera. On capture, the snapshot
- * is placed into the managed_file element's native file input via
- * DataTransfer, then the hidden "Upload" button is clicked so core's normal
- * AJAX upload runs. On unlimited-cardinality fields a new empty row appears
- * automatically after the upload completes.
+ * The "Take Photo" control is a <label for="..."> pointing at the managed
+ * file input, which has capture="environment" set. On mobile this opens the
+ * device camera as a native user gesture (required by iOS Safari). On
+ * desktop the JS intercepts the click and uses getUserMedia instead.
  *
- * The PHP widget also adds capture="environment" to the file input so that
- * on mobile browsers the native capture chooser is used as a fallback when
- * getUserMedia is unavailable.
+ * To make the AJAX upload reliable on iOS — where core's fileAutoUpload
+ * jQuery change handler can be unreliable on a capture input — this
+ * behaviour ALSO binds its own change listener to the file input that
+ * triggers the hidden Upload button's mousedown directly.
  */
 (function ($, Drupal) {
   'use strict';
@@ -29,30 +29,23 @@
   }
 
   /**
-   * Places a File into a managed_file element and triggers core's AJAX upload.
-   *
-   * Sets the file on the input via DataTransfer, then triggers mousedown on
-   * the hidden Upload button via jQuery — the exact same mechanism core's
-   * fileAutoUpload.triggerUploadButton uses when a user picks a file.
+   * Places a File into a managed_file element and triggers the AJAX upload.
    */
   function pushFileAndUpload(wrapper, file) {
     const input = wrapper.querySelector('input[type="file"]');
     if (!input) {
-      console.error('Camera Upload: no file input found');
       return;
     }
     const dt = new DataTransfer();
     dt.items.add(file);
     input.files = dt.files;
+    triggerUpload(wrapper);
+  }
 
-    // Verify the file was actually set (some browsers block this).
-    if (!input.files || input.files.length === 0) {
-      console.error('Camera Upload: could not set file on input (browser may block programmatic file assignment)');
-      return;
-    }
-
-    // Trigger the hidden upload button's mousedown via jQuery — this is
-    // exactly what Drupal.file.triggerUploadButton does.
+  /**
+   * Triggers the hidden Upload button's mousedown event via jQuery.
+   */
+  function triggerUpload(wrapper) {
     $(wrapper)
       .find('.js-form-submit[data-drupal-selector$="upload-button"]')
       .trigger('mousedown');
@@ -131,39 +124,7 @@
   }
 
   /**
-   * Falls back to clicking the native file input (which has
-   * capture="environment" set by the PHP widget). On mobile this opens the
-   * device camera chooser; on desktop it opens a file picker.
-   */
-  function captureWithNativeInput(wrapper) {
-    return new Promise((resolve, reject) => {
-      const input = wrapper.querySelector('input[type="file"]');
-      if (!input) {
-        reject(new Error('No file input found'));
-        return;
-      }
-      const onChange = () => {
-        input.removeEventListener('change', onChange);
-        if (input.files && input.files[0]) {
-          resolve(input.files[0]);
-        } else {
-          reject(new Error('No file selected'));
-        }
-      };
-      input.addEventListener('change', onChange);
-      input.click();
-    });
-  }
-
-  /**
-   * Detects mobile/touch devices (phones and tablets).
-   *
-   * On these devices the native file input with capture="environment" opens
-   * the built-in camera app, which is both more reliable and a better UX
-   * than the getUserMedia overlay. Crucially, iOS Safari does not allow
-   * programmatically setting input.files via DataTransfer, so the
-   * getUserMedia + push approach cannot work there — the native input path
-   * lets the browser set the file itself and fire a genuine change event.
+   * Detects mobile/touch devices.
    */
   function isMobileDevice() {
     return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
@@ -172,18 +133,36 @@
 
   Drupal.behaviors.cameraUpload = {
     attach(context) {
+      // On mobile devices, bind a direct change listener to each camera
+      // upload file input so the AJAX upload fires reliably on iOS Safari
+      // (where core's fileAutoUpload jQuery handler can be unreliable on
+      // capture inputs). On desktop, skip this — core's fileAutoUpload
+      // handles the change event, and our pushFileAndUpload already
+      // triggers the upload button directly.
+      if (isMobileDevice()) {
+        once('camera-upload-input', '.camera-upload-managed-file input[type="file"]', context).forEach((input) => {
+          input.addEventListener('change', function () {
+            if (this.files && this.files.length > 0) {
+              const wrapper = this.closest('.js-form-managed-file');
+              if (wrapper) {
+                triggerUpload(wrapper);
+              }
+            }
+          });
+        });
+      }
+
+      // Handle the "Take Photo" label click.
       once('camera-upload-capture', '.camera-upload-capture-button', context).forEach((button) => {
         button.addEventListener('click', (e) => {
-          // On mobile devices, do nothing here — the label's native `for`
-          // attribute already opens the file input (camera) as a user
-          // gesture, which is required by iOS Safari. Let the default
-          // label behaviour proceed and core's AJAX handle the upload.
+          // On mobile, let the label's native `for` open the camera. Our
+          // change listener above will handle the upload.
           if (isMobileDevice()) {
             return;
           }
 
-          // On desktop, prevent the label from also opening the file picker
-          // (we'll use the in-browser camera instead) and run getUserMedia.
+          // On desktop, prevent the label from opening the file picker and
+          // use getUserMedia instead.
           e.preventDefault();
           const wrapper = button.closest('.js-form-managed-file');
           if (!wrapper) {
@@ -192,7 +171,13 @@
 
           captureWithGetUserMedia()
             .then((file) => pushFileAndUpload(wrapper, file))
-            .catch(() => captureWithNativeInput(wrapper))
+            .catch(() => {
+              // Fallback: let the native input open.
+              const input = wrapper.querySelector('input[type="file"]');
+              if (input) {
+                input.click();
+              }
+            })
             .catch((err) => {
               if (err && err.message !== 'User cancelled' && err.message !== 'No file selected') {
                 console.error('Camera Upload capture failed:', err);
