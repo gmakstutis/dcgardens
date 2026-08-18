@@ -25,6 +25,7 @@
         "drupal/core-project-message": "^11.4",
         "drupal/core-recipe-unpack": "^11.4",
         "drupal/core-recommended": "^11.4",
+        "drupal/exif_orientation": "^1.5",
         "drupal/meta_position": "^2.0",
         "drupal/redirect_after_login": "^3.0",
         "drupal/token": "^1.17",

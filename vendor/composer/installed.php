@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'drupal/recommended-project',
-        'pretty_version' => '1.0.0+no-version-set',
-        'version' => '1.0.0.0',
-        'reference' => null,
+        'pretty_version' => 'dev-main',
+        'version' => 'dev-main',
+        'reference' => '53d76f4fdbfe13b66a1a5425ccb229424942b472',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -406,6 +406,15 @@
                 0 => '11.4.5',
             ),
         ),
+        'drupal/exif_orientation' => array(
+            'pretty_version' => '1.5.0',
+            'version' => '1.5.0.0',
+            'reference' => '8.x-1.5',
+            'type' => 'drupal-module',
+            'install_path' => __DIR__ . '/../../web/modules/contrib/exif_orientation',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
         'drupal/meta_position' => array(
             'pretty_version' => '2.0.0',
             'version' => '2.0.0.0',
@@ -416,9 +425,9 @@
             'dev_requirement' => false,
         ),
         'drupal/recommended-project' => array(
-            'pretty_version' => '1.0.0+no-version-set',
-            'version' => '1.0.0.0',
-            'reference' => null,
+            'pretty_version' => 'dev-main',
+            'version' => 'dev-main',
+            'reference' => '53d76f4fdbfe13b66a1a5425ccb229424942b472',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
