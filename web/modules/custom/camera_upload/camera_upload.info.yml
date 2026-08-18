@@ -1,0 +1,7 @@
+name: Camera Upload
+type: module
+description: 'Provides a Camera Upload field type that lets users capture a photo from their mobile phone camera. Captured photos are watermarked with a timestamp and the site location of the referencing Site Record.'
+package: DCG
+core_version_requirement: ^11
+dependencies:
+  - drupal:image

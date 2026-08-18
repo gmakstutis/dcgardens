@@ -1,0 +1,78 @@
+uuid: 4fc387a5-e63d-42ab-b0ba-a574a7b793c4
+langcode: en-gb
+status: true
+dependencies:
+  config:
+    - field.field.node.resident_notes.field_arrival
+    - field.field.node.resident_notes.field_description
+    - field.field.node.resident_notes.field_resident_address
+    - field.field.node.resident_notes.field_resident_name
+    - field.field.node.resident_notes.field_site_location
+    - field.field.node.resident_notes.field_site_location_other
+    - node.type.resident_notes
+  module:
+    - datetime
+    - user
+id: node.resident_notes.default
+targetEntityType: node
+bundle: resident_notes
+mode: default
+content:
+  field_arrival:
+    type: datetime_default
+    label: above
+    settings:
+      timezone_override: ''
+      format_type: medium
+    third_party_settings: {  }
+    weight: 108
+    region: content
+  field_description:
+    type: basic_string
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 101
+    region: content
+  field_resident_address:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+      link_rel: canonical
+    third_party_settings: {  }
+    weight: 109
+    region: content
+  field_resident_name:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+      link_rel: canonical
+    third_party_settings: {  }
+    weight: 110
+    region: content
+  field_site_location:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 101
+    region: content
+  field_site_location_other:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+      link_rel: canonical
+    third_party_settings: {  }
+    weight: 102
+    region: content
+  links:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 100
+    region: content
+hidden:
+  langcode: true

@@ -1,0 +1,17 @@
+<div class="container mb-4 mt-4">
+  <div class="row justify-content-between">
+    <div class="col-4">
+      <h2>Sites/Locations</h2>
+    </div>
+    <div class="col-8 text-end">
+      {% if logged_in %}
+      <div class="btn-group btn-group-sm" role="group" aria-label="Work Type Actions">
+        <a class="btn btn-success btn-small me-2" href="node/add/site" role="button">New Site</a>
+        <!--<a class="btn btn-secondary btn-small" href="/resident-notes" role="button">Resident Notes</a>
+        <a class="btn btn-secondary btn-small" href="/site-records" role="button">Site Records</a>
+        <a class="btn btn-secondary btn-small" href="/work-types" role="button">Work Types</a> -->
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>

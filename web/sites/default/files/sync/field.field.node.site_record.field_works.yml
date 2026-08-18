@@ -1,0 +1,29 @@
+uuid: 3845901e-00f5-4dd6-96da-2d4039bba7fa
+langcode: en-gb
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_works
+    - node.type.site_record
+    - node.type.work_type
+id: node.site_record.field_works
+field_name: field_works
+entity_type: node
+bundle: site_record
+label: 'Type(s) of Work'
+description: ''
+required: true
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:node'
+  handler_settings:
+    target_bundles:
+      work_type: work_type
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

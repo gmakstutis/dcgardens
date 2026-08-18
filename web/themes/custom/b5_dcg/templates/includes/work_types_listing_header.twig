@@ -1,0 +1,17 @@
+<div class="container mb-4 mt-4">
+  <div class="row justify-content-between">
+    <div class="col-4">
+      <h2>Work Types</h2>
+    </div>
+    <div class="col-8 text-end">
+      {% if logged_in %}
+      <div class="btn-group btn-group-sm" role="group" aria-label="Work Type Actions">
+        <a class="btn btn-success btn-small me-2" href="node/add/work_types" role="button">New Work Type</a>
+        <!-- <a class="btn btn-secondary btn-small" href="/resident-notes" role="button">Resident Notes</a>
+        <a class="btn btn-secondary btn-small" href="/site-records" role="button">Site Records</a>
+        <a class="btn btn-secondary btn-small" href="/list-sites" role="button">Sites</a> -->
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>

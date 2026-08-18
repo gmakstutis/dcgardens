@@ -1,0 +1,7 @@
+name: Site Record Name
+type: module
+description: 'Hides the standard title field on the Site Record content type and auto-generates the title from the site location and arrival start date.'
+package: DCG
+core_version_requirement: ^11
+dependencies:
+  - drupal:node

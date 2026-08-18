@@ -1,0 +1,6 @@
+camera:
+  version: 1.x
+  js:
+    js/camera.js: {}
+  dependencies:
+    - core/drupal

@@ -1,0 +1,19 @@
+uuid: 5e500282-f9b7-4986-bdaa-4c6f01481e14
+langcode: en-gb
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_other_works
+    - node.type.site_record
+id: node.site_record.field_other_works
+field_name: field_other_works
+entity_type: node
+bundle: site_record
+label: 'Other Works...'
+description: 'Separate each entry with a comma (e.g., item1, item2)'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string

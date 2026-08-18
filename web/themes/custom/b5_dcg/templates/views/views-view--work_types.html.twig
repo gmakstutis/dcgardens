@@ -1,0 +1,24 @@
+{{ include('@b5_dcg/includes/work_types_listing_header.twig') }}
+<div class="container-fluid">
+  <div class="table-responsive">
+    <table class="table table-striped table-bordered table-hover">
+      <thead>
+        <tr>
+          <th>Works</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+          {{ row }}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {# Render pager at the bottom #}
+  {% if pager %}
+    <div class="view-pager-bottom">
+      {{ pager }}
+    </div>
+  {% endif %}
+</div>

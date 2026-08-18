@@ -1,0 +1,19 @@
+uuid: bbddae1c-1e9c-4985-b6d4-d1728effbd14
+langcode: en-gb
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_resident_name
+    - node.type.resident_notes
+id: node.resident_notes.field_resident_name
+field_name: field_resident_name
+entity_type: node
+bundle: resident_notes
+label: 'Resident Name'
+description: ''
+required: true
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string

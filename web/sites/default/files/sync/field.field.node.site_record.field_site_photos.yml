@@ -1,0 +1,38 @@
+uuid: 704fede6-9f22-40d7-942a-e33fa3c8f37b
+langcode: en-gb
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_site_photos
+    - node.type.site_record
+  module:
+    - camera_upload
+id: node.site_record.field_site_photos
+field_name: field_site_photos
+entity_type: node
+bundle: site_record
+label: 'Site Photos'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  file_directory: '[date:custom:Y]-[date:custom:m]'
+  file_extensions: 'jpg jpeg'
+  max_filesize: ''
+  max_resolution: ''
+  min_resolution: ''
+  alt_field: 0
+  alt_field_required: 1
+  title_field: 0
+  title_field_required: 0
+  default_image:
+    uuid: ''
+    alt: ''
+    title: ''
+    width: null
+    height: null
+  handler: 'default:file'
+  handler_settings: {  }
+field_type: camera_upload

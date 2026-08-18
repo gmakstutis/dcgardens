@@ -1,0 +1,90 @@
+<?php
+
+/**
+ * @file
+ * Primary module hooks for the Resident Notes Name module.
+ */
+
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\node\NodeInterface;
+
+/**
+ * Implements hook_form_BASE_FORM_ID_alter() for node_form.
+ *
+ * Hides the title field on Resident Notes nodes. The title is generated at
+ * presave time from field_resident_name and the start date of field_arrival
+ * in the format "resident_name - dd/mm/YYYY".
+ */
+function resident_notes_name_form_node_form_alter(array &$form, FormStateInterface $form_state) {
+  $node = $form_state->getFormObject()->getEntity();
+  if (!($node instanceof NodeInterface) || $node->bundle() !== 'resident_notes') {
+    return;
+  }
+
+  $title_field = \Drupal::entityTypeManager()->getDefinition('node')->getKey('label');
+  if (empty($title_field) || !isset($form[$title_field])) {
+    return;
+  }
+
+  $form[$title_field]['#access'] = FALSE;
+  $form[$title_field]['#required'] = FALSE;
+  if (isset($form[$title_field]['widget'][0]['value']['#required'])) {
+    $form[$title_field]['widget'][0]['value']['#required'] = FALSE;
+  }
+  if (isset($form[$title_field]['widget'][0]['#required'])) {
+    $form[$title_field]['widget'][0]['#required'] = FALSE;
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_presave() for node.
+ *
+ * Sets the title on Resident Notes nodes from field_resident_name and the
+ * start date of field_arrival in the format "resident_name - dd/mm/YYYY".
+ */
+function resident_notes_name_node_presave(NodeInterface $node) {
+  if ($node->bundle() !== 'resident_notes') {
+    return;
+  }
+
+  $title_field = \Drupal::entityTypeManager()->getDefinition('node')->getKey('label');
+  if (empty($title_field)) {
+    return;
+  }
+
+  $resident_name = '';
+  if ($node->hasField('field_resident_name') && !$node->get('field_resident_name')->isEmpty()) {
+    $value = $node->get('field_resident_name')->first()->getValue();
+    $resident_name = isset($value['value']) ? (string) $value['value'] : '';
+  }
+
+  $arrival = '';
+  if ($node->hasField('field_arrival') && !$node->get('field_arrival')->isEmpty()) {
+    $value = $node->get('field_arrival')->first()->getValue();
+    if (!empty($value['value'])) {
+      try {
+        $date = new \Drupal\Core\Datetime\DrupalDateTime($value['value']);
+        $arrival = $date->format('d/m/Y');
+      }
+      catch (\Exception $e) {
+        $arrival = (string) $value['value'];
+      }
+    }
+  }
+
+  $parts = [];
+  if ($resident_name !== '') {
+    $parts[] = $resident_name;
+  }
+  if ($arrival !== '') {
+    $parts[] = $arrival;
+  }
+
+  $title = implode(' - ', $parts);
+  if ($title === '') {
+    $title = t('Resident Notes @id', ['@id' => $node->id() ?: t('new')])->__toString();
+  }
+
+  $title = mb_substr($title, 0, 255);
+  $node->set($title_field, $title);
+}

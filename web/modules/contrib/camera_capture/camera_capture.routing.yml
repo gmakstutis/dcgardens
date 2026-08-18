@@ -1,0 +1,7 @@
+camera_capture.form:
+  path: '/camera-capture'
+  defaults:
+    _form: '\Drupal\camera_capture\Form\CameraCaptureForm'
+    _title: 'Camera Capture'
+  requirements:
+    _permission: 'access content'

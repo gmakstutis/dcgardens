@@ -1,0 +1,27 @@
+<div class="container-fluid">
+  {{ include('@b5_dcg/includes/resident_notes_listing_header.twig') }}
+  <div class="table-responsive">
+    <table class="table table-striped table-bordered table-hover">
+      <thead>
+        <tr>
+          <th>
+            Date<br />
+            Name/Address
+          </th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+          {{ row }}
+        {% endfor %}
+      </tbody>
+    </table>
+    {# Render pager at the bottom #}
+    {% if pager %}
+      <div class="view-pager-bottom">
+        {{ pager }}
+      </div>
+    {% endif %}
+  </div>
+</div>

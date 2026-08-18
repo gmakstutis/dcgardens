@@ -1,0 +1,16 @@
+<div class="container mb-4 mt-4">
+  <div class="row justify-content-between">
+    <div class="col-4">
+      <h2>Site Records</h2>
+    </div>
+    <div class="col-4 text-end">
+      {% if logged_in %}
+      <div class="btn-group btn-group-sm" role="group" aria-label="Site Record Actions">
+        <a class="btn btn-success btn-small me-2" href="node/add/site_record" role="button">New Record</a>
+        <!-- <a class="btn btn-secondary btn-small" href="/work-types" role="button">List Work Types</a>
+        <a class="btn btn-secondary btn-small" href="/list-sites" role="button">List Sites</a> -->
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>

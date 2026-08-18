@@ -1,0 +1,25 @@
+uuid: 10e097f4-5baf-406e-a5b3-201a2a77bf87
+langcode: en-gb
+status: true
+dependencies:
+  module:
+    - system
+  theme:
+    - b5_dcg
+_core:
+  default_config_hash: 8Zccji1DCkOIDyJwckDUYUSQOpFmOK5pB_7vFJj_z1M
+id: b5_dcg_branding
+theme: b5_dcg
+region: nav_branding
+weight: -6
+provider: null
+plugin: system_branding_block
+settings:
+  id: system_branding_block
+  label: 'Site branding'
+  label_display: '0'
+  provider: system
+  use_site_logo: true
+  use_site_name: true
+  use_site_slogan: false
+visibility: {  }

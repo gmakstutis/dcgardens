@@ -1,0 +1,19 @@
+uuid: 69c84f7e-5e80-4dba-8c47-08fb9240e8eb
+langcode: en-gb
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_site_location_other
+    - node.type.site_record
+id: node.site_record.field_site_location_other
+field_name: field_site_location_other
+entity_type: node
+bundle: site_record
+label: 'Other Site/Location'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string

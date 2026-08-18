@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="drupal-project">
+  <description>PHP CodeSniffer configuration for vbo_export.</description>
+  <rule ref="Drupal">
+    <exclude name="Drupal.Commenting.FunctionComment"/>
+  </rule>
+  <arg name="extensions" value="php,inc,module,install,info,test,profile,theme"/>
+</ruleset>

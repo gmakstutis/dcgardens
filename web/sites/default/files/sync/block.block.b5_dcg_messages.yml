@@ -1,0 +1,22 @@
+uuid: 1a685ed0-68d3-4fa2-8acc-15a97098110d
+langcode: en-gb
+status: true
+dependencies:
+  module:
+    - system
+  theme:
+    - b5_dcg
+_core:
+  default_config_hash: pWWdBewci6DfJYVnR5gtGwVJVCDNzqL0AsYm9oVDA1M
+id: b5_dcg_messages
+theme: b5_dcg
+region: content
+weight: -7
+provider: null
+plugin: system_messages_block
+settings:
+  id: system_messages_block
+  label: Messages
+  label_display: '0'
+  provider: system
+visibility: {  }

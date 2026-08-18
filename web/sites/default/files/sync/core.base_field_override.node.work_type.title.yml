@@ -1,0 +1,18 @@
+uuid: 8cfb9dfc-c781-449b-b0b8-c236b1d070c9
+langcode: en-gb
+status: true
+dependencies:
+  config:
+    - node.type.work_type
+id: node.work_type.title
+field_name: title
+entity_type: node
+bundle: work_type
+label: 'Work Type'
+description: ''
+required: true
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string

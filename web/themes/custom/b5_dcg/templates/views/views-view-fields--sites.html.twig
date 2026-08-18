@@ -1,0 +1,14 @@
+<tr>
+  <td>
+    <a href="node/{{ fields.nid.content }}">
+      {{ fields.title.content }}
+    </a>
+  </td>
+  <td>
+  {% if fields.field_work_notes.content %}
+    {{ fields.field_work_notes.content | truncate(200, true) | raw }}...
+  {% else %}
+    No description available.
+  {% endif %}
+  </td>
+</tr>

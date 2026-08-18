@@ -1,0 +1,22 @@
+uuid: 2037362c-b53e-48e0-ae92-d576ef9928de
+langcode: en-gb
+status: true
+dependencies:
+  module:
+    - system
+  theme:
+    - b5_dcg
+_core:
+  default_config_hash: W4PgPI0vyBeC5uZG-l_gpiH9V6v-kWDLn1Ku0xNCt5s
+id: b5_dcg_breadcrumbs
+theme: b5_dcg
+region: breadcrumb
+weight: 0
+provider: null
+plugin: system_breadcrumb_block
+settings:
+  id: system_breadcrumb_block
+  label: Breadcrumbs
+  label_display: '0'
+  provider: system
+visibility: {  }

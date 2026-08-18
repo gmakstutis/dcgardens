@@ -1,0 +1,243 @@
+<?php
+
+/**
+ * @file
+ * Primary module hooks for the Camera Upload module.
+ */
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\FieldableEntityInterface;
+use Drupal\file\FileInterface;
+
+/**
+ * Implements hook_entity_presave().
+ *
+ * Watermarks each newly-added photo stored in a Camera Upload field with the
+ * site location and date. Only files that were not already referenced by the
+ * entity prior to this save are watermarked, so existing photos are not
+ * re-watermarked when the node is edited.
+ */
+function camera_upload_entity_presave(EntityInterface $entity) {
+  if (!($entity instanceof FieldableEntityInterface)) {
+    return;
+  }
+
+  $fields = \Drupal::service('entity_field.manager')->getFieldDefinitions($entity->getEntityTypeId(), $entity->bundle());
+  foreach ($fields as $field_name => $definition) {
+    if ($definition->getType() !== 'camera_upload') {
+      continue;
+    }
+
+    // Determine the set of file IDs that were already referenced before this
+    // save (i.e. the original entity values).
+    $original_fids = [];
+    if (!$entity->isNew() && $entity->getEntityType()->isRevisionable() && $entity instanceof \Drupal\Core\Entity\RevisionableInterface) {
+      $original = $entity->original ?? NULL;
+    }
+    else {
+      $original = $entity->original ?? NULL;
+    }
+    if ($original instanceof FieldableEntityInterface && $original->hasField($field_name)) {
+      foreach ($original->get($field_name) as $original_item) {
+        if ($original_item->target_id) {
+          $original_fids[$original_item->target_id] = TRUE;
+        }
+      }
+    }
+
+    $items = $entity->get($field_name);
+    $site_location = camera_upload_resolve_site_location($entity);
+    foreach ($items as $item) {
+      $file = $item->entity ?? NULL;
+      if ($file instanceof FileInterface) {
+        // Skip files that were already referenced by the original entity —
+        // they were watermarked when first added and must not be re-processed.
+        if (isset($original_fids[$file->id()])) {
+          continue;
+        }
+        camera_upload_watermark_file($file, $site_location);
+      }
+    }
+  }
+}
+
+/**
+ * Resolves the site location string for an entity.
+ *
+ * Reads field_site_location and field_site_location_other from the same
+ * entity. If the value of field_site_location is "~Other..." then the value
+ * of field_site_location_other is used instead. The "Site Record" entity
+ * type is treated as the entity that owns these fields, but the lookup is
+ * generic so it works regardless of where those fields live.
+ *
+ * @param \Drupal\Core\Entity\FieldableEntityInterface $entity
+ *   The entity being saved.
+ *
+ * @return string
+ *   The resolved site location string, or an empty string if none available.
+ */
+function camera_upload_resolve_site_location(FieldableEntityInterface $entity): string {
+  if (!$entity->hasField('field_site_location')) {
+    return '';
+  }
+
+  $main = '';
+  if (!$entity->get('field_site_location')->isEmpty()) {
+    $value = $entity->get('field_site_location')->first()->getValue();
+    // The field is an entity_reference to node. Load the referenced node and
+    // use its label as the site location name.
+    if (isset($value['target_id'])) {
+      $referenced = \Drupal::entityTypeManager()->getStorage('node')->load($value['target_id']);
+      $main = $referenced ? (string) $referenced->label() : '';
+    }
+    elseif (isset($value['value'])) {
+      $main = (string) $value['value'];
+    }
+  }
+
+  if ($main === '~Other...' || $main === '~Other…') {
+    if ($entity->hasField('field_site_location_other') && !$entity->get('field_site_location_other')->isEmpty()) {
+      $other = $entity->get('field_site_location_other')->first()->getValue();
+      return isset($other['value']) ? (string) $other['value'] : '';
+    }
+  }
+
+  return $main;
+}
+
+/**
+ * Watermarks a captured image file with a timestamp and site location.
+ *
+ * The watermark text is rendered in two lines:
+ *  Line 1: site location (if non-empty).
+ *  Line 2: YYYY-mm-dd H:i:s timestamp.
+ *
+ * Uses GD directly since Drupal's image toolkit does not expose a text
+ * operation. The original file is overwritten in place.
+ *
+ * @param \Drupal\file\FileInterface $file
+ *   The file entity to watermark.
+ * @param string $site_location
+ *   The resolved site location string.
+ */
+function camera_upload_watermark_file(FileInterface $file, string $site_location): void {
+  $uri = $file->getFileUri();
+  $path = \Drupal::service('file_system')->realpath($uri);
+  if (!$path || !is_file($path)) {
+    return;
+  }
+
+  // Only process JPEG files; the field restricts uploads to jpg/jpeg anyway.
+  $mime = $file->getMimeType();
+  if (!in_array($mime, ['image/jpeg', 'image/jpg'], TRUE)) {
+    return;
+  }
+
+  $image = @imagecreatefromjpeg($path);
+  if (!$image) {
+    return;
+  }
+
+  $width = imagesx($image);
+  $height = imagesy($image);
+
+  // Build the watermark text on a single line: "site/location - YYYY-mm-dd".
+  $date = date('Y-m-d');
+  if ($site_location !== '') {
+    $text = $site_location . ' - ' . $date;
+  }
+  else {
+    $text = $date;
+  }
+  if ($text === '') {
+    return;
+  }
+  $lines = [$text];
+
+  // Choose a font size proportional to the image width.
+  $font_size = max(12, (int) round($width / 30));
+  $padding = (int) round($font_size * 0.4);
+  $line_height = (int) round($font_size * 1.4);
+
+  // Allocate colors. Use a semi-transparent black bar with white text for
+  // legibility across arbitrary backgrounds.
+  $text_color = imagecolorallocate($image, 255, 255, 255);
+  $bar_color = imagecolorallocatealpha($image, 0, 0, 0, 60);
+
+  // Find a font path. Drupal core ships a DejaVu sans font with the image
+  // module for sample generation; fall back to a bundled GD font path. We
+  // try the DejaVu font shipped with core, then a few common system paths.
+  $font_path = '';
+  $candidates = [
+    DRUPAL_ROOT . '/core/modules/system/tests/fixtures/files/da Vinci.ttf',
+    DRUPAL_ROOT . '/core/lib/Drupal/Component/Render/fixtures/da Vinci.ttf',
+    '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+    '/Library/Fonts/Arial.ttf',
+    '/System/Library/Fonts/Supplemental/Arial.ttf',
+  ];
+  foreach ($candidates as $candidate) {
+    if (is_file($candidate)) {
+      $font_path = $candidate;
+      break;
+    }
+  }
+
+  // Measure the widest line.
+  $max_text_width = 0;
+  foreach ($lines as $line) {
+    if ($font_path) {
+      $box = imagettfbbox($font_size, 0, $font_path, $line);
+      $w = abs($box[4] - $box[0]);
+    }
+    else {
+      $w = strlen($line) * imagefontwidth(5);
+    }
+    if ($w > $max_text_width) {
+      $max_text_width = $w;
+    }
+  }
+
+  $block_width = $max_text_width + 2 * $padding;
+  $block_height = $line_height * count($lines) + $padding;
+  $block_x = $width - $block_width - $padding;
+  $block_y = $height - $block_height - $padding;
+
+  // Keep the watermark within the image bounds.
+  if ($block_x < 0) {
+    $block_x = $padding;
+  }
+  if ($block_y < 0) {
+    $block_y = $padding;
+  }
+
+  imagefilledrectangle($image, $block_x, $block_y, $block_x + $block_width, $block_y + $block_height, $bar_color);
+
+  foreach ($lines as $index => $line) {
+    $text_x = $block_x + $padding;
+    $text_y = $block_y + $padding + ($index + 1) * $line_height - (int) round($line_height * 0.25);
+    if ($font_path) {
+      imagettftext($image, $font_size, 0, $text_x, $text_y, $text_color, $font_path, $line);
+    }
+    else {
+      imagestring($image, 5, $text_x, $text_y - $font_size, $line, $text_color);
+    }
+  }
+
+  // Save the watermarked image back over the original.
+  imagejpeg($image, $path, 92);
+  imagedestroy($image);
+
+  // Update the file size on the entity so Drupal records the correct size.
+  $file->setSize(filesize($path));
+
+  // Clear derived image style derivatives so cached versions of the original
+  // photo are regenerated with the watermark.
+  \Drupal::moduleHandler()->moduleExists('image') && \Drupal::service('image.factory')->get($uri);
+  if (\Drupal::moduleHandler()->moduleExists('image')) {
+    /** @var \Drupal\image\ImageStyleInterface[] $styles */
+    $styles = \Drupal::entityTypeManager()->getStorage('image_style')->loadMultiple();
+    foreach ($styles as $style) {
+      $style->flush($uri);
+    }
+  }
+}

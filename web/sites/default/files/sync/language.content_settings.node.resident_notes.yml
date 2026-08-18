@@ -1,0 +1,11 @@
+uuid: 80f84d9e-7f7a-405e-90c7-ece2c908b71f
+langcode: en-gb
+status: true
+dependencies:
+  config:
+    - node.type.resident_notes
+id: node.resident_notes
+target_entity_type_id: node
+target_bundle: resident_notes
+default_langcode: site_default
+language_alterable: false

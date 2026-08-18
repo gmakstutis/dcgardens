@@ -1,0 +1,26 @@
+<tr>
+  <td>
+    <a href="node/{{fields.nid.content}}">
+      {{ fields.field_arrival.content }} - {{ fields.field_arrival_1.content }}<br />
+    </a>
+    {% if fields.field_site_location_other.content %}
+      <span class="fw-bold">{{ fields.field_site_location_other.content }}</span>
+    {% else %}
+      <span class="fw-bold">{{ fields.field_site_location.content }}</span>
+    {% endif %}
+  </td>
+  <td>{{ fields.field_operatives.content }}</td>
+  <td>
+
+      {% set works = fields.field_works.content | split(',') %}
+      {% for work in works %}
+      <span class="badge rounded-pill text-bg-info">{{ work }}</span>
+      {% endfor %}
+      {% if fields.field_other_works.content %}
+        {% set others = fields.field_other_works.content | split(',') %}
+        {% for other in others %}
+          <span class="badge rounded-pill text-bg-secondary">{{ other }}</span>
+        {% endfor %}
+      {% endif %}
+  </td>
+</tr>

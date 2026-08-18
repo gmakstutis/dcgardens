@@ -1,0 +1,11 @@
+uuid: 58f51dcb-3ee0-43be-8acd-c0b4ac135cab
+langcode: en-gb
+status: true
+dependencies:
+  config:
+    - node.type.work_type
+id: node.work_type
+target_entity_type_id: node
+target_bundle: work_type
+default_langcode: site_default
+language_alterable: false

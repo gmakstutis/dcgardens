@@ -1,0 +1,75 @@
+<?php
+
+/**
+ * @file
+ * Delivers an action to export view results to csv.
+ */
+
+use Drupal\Core\Hook\Attribute\LegacyHook;
+use Drupal\vbo_export\Hook\VboExportHooks;
+use Drupal\Core\Routing\RouteMatchInterface;
+
+/**
+ * Implements hook_help().
+ */
+#[LegacyHook]
+function vbo_export_help(string $route_name, RouteMatchInterface $route_match): ?string {
+  return \Drupal::service(VboExportHooks::class)->help($route_name, $route_match);
+}
+
+/**
+ * Implements hook_theme().
+ */
+#[LegacyHook]
+function vbo_export_theme(): array {
+  return \Drupal::service(VboExportHooks::class)->theme();
+}
+
+/**
+ * Library loader function.
+ *
+ * Loads the library if not already available and
+ * optionally checks its version.
+ */
+function _vbo_export_library_exists(string $classname, bool $details = FALSE): string|bool {
+  /** @var array<string, string|bool> $output */
+  static $output;
+  if (!isset($output[$classname])) {
+    $output[$classname] = FALSE;
+
+    // If composer was used to add dependency, the class should exist,
+    // Otherwise check given path.
+    if (class_exists($classname)) {
+      if ($details) {
+        $reflector = new ReflectionClass($classname);
+        $path = dirname($reflector->getFileName());
+
+        // PHPSpreadsheet.
+        if (file_exists($path . '/../../CHANGELOG.md') && $content = file_get_contents($path . '/../../CHANGELOG.md')) {
+          $fh = fopen($path . '/../../CHANGELOG.md', 'r');
+          while (!feof($fh)) {
+            $line = fgets($fh);
+
+            if (preg_match('/##.*([0-9]+\.[0-9]+[0-9\.]*?)/', $line) === 1) {
+              $output[$classname] = trim(strtr($line, ['#' => '']));
+              break;
+            }
+          }
+        }
+
+        // Dompdf.
+        elseif (file_exists($path . '/../VERSION') && $content = file_get_contents($path . '/../VERSION')) {
+          $output[$classname] = trim($content);
+        }
+
+        if (!array_key_exists($classname, $output)) {
+          $output[$classname] = 'undetected';
+        }
+      }
+      else {
+        $output[$classname] = TRUE;
+      }
+    }
+  }
+  return $output[$classname];
+}

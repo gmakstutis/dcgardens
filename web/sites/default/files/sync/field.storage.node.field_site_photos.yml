@@ -1,0 +1,30 @@
+uuid: 372e8ef2-4378-4410-bacf-ceef6eb7862c
+langcode: en-gb
+status: true
+dependencies:
+  module:
+    - camera_upload
+    - file
+    - node
+id: node.field_site_photos
+field_name: field_site_photos
+entity_type: node
+type: camera_upload
+settings:
+  uri_scheme: public
+  default_image:
+    uuid: ''
+    alt: ''
+    title: ''
+    width: null
+    height: null
+  display_default: true
+  target_type: file
+  display_field: false
+module: camera_upload
+locked: false
+cardinality: -1
+translatable: true
+indexes: {  }
+persist_with_no_fields: false
+custom_storage: false

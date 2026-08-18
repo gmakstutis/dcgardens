@@ -1,0 +1,23 @@
+{{ include('@b5_dcg/includes/resident_notes_node_header.twig') }}
+<div class="container mt-4">
+  <div class="row fs-4 mb-2">
+    <div class="col">
+      <span class="fw-bold">Date: </span>{{ node.field_arrival.date|date('Y-m-d') }}
+    </div>
+    <div class="col">
+    {% if node.field_site_location.entity.title.value == "~Other..." %}
+      <span class="fw-bold">Site: </span>{{ node.field_site_location_other.value }}<br />
+      <span class="fw-bold">Address: </span>{{ node.field_resident_address.value }}
+    {% else %}
+      <span class="fw-bold">Site: </span>{{ node.field_site_location.entity.title.value }}<br />
+      <span class="fw-bold">Address: </span>{{ node.field_resident_address.value }}
+    {% endif %}
+    </div>
+  </div>
+  <div class="row">
+    <div class="col">
+      <div class="fs-4"><span class="fw-bold">Notes: </span></div>
+      {{ node.field_description.value | raw }}
+    </div>
+  </div>
+</div>

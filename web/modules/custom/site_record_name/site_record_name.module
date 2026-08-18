@@ -1,0 +1,156 @@
+<?php
+
+/**
+ * @file
+ * Primary module hooks for the Site Record Name module.
+ */
+
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\node\NodeInterface;
+
+/**
+ * Implements hook_form_BASE_FORM_ID_alter() for node_form.
+ *
+ * Hides the title field on Site Record nodes. The title is generated at
+ * presave time from field_site_location (or field_site_location_other) and
+ * the start date of field_arrival.
+ */
+function site_record_name_form_node_form_alter(array &$form, FormStateInterface $form_state) {
+  $node = $form_state->getFormObject()->getEntity();
+  if (!($node instanceof NodeInterface) || $node->bundle() !== 'site_record') {
+    return;
+  }
+
+  $title_field = \Drupal::entityTypeManager()->getDefinition('node')->getKey('label');
+  if (empty($title_field) || !isset($form[$title_field])) {
+    return;
+  }
+
+  // Hide the title field from the form. Keep the key so the value can still be
+  // set programmatically; #access FALSE also keeps it out of submissions.
+  $form[$title_field]['#access'] = FALSE;
+
+  // Mark the title as not required. We cannot reach the base field definition
+  // constraint from here directly, but #required FALSE covers the form-level
+  // validation and the entity-level NotNull constraint is bypassed by the
+  // presave hook which sets the title before validation of required fields
+  // would matter. To be safe we also strip the #required flag and any
+  // required-related states.
+  $form[$title_field]['#required'] = FALSE;
+  if (isset($form[$title_field]['widget'][0]['value']['#required'])) {
+    $form[$title_field]['widget'][0]['value']['#required'] = FALSE;
+  }
+  if (isset($form[$title_field]['widget'][0]['#required'])) {
+    $form[$title_field]['widget'][0]['#required'] = FALSE;
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_presave() for node.
+ *
+ * Sets the title on Site Record nodes from the site location and the start
+ * date of field_arrival.
+ */
+function site_record_name_node_presave(NodeInterface $node) {
+  if ($node->bundle() !== 'site_record') {
+    return;
+  }
+
+  $title_field = \Drupal::entityTypeManager()->getDefinition('node')->getKey('label');
+  if (empty($title_field)) {
+    return;
+  }
+
+  $site_location = site_record_name_resolve_site_location($node);
+  $arrival = site_record_name_resolve_arrival($node);
+
+  $parts = [];
+  if ($site_location !== '') {
+    $parts[] = $site_location;
+  }
+  if ($arrival !== '') {
+    $parts[] = $arrival;
+  }
+
+  $title = implode(' - ', $parts);
+  if ($title === '') {
+    $title = t('Site Record @id', ['@id' => $node->id() ?: t('new')])->__toString();
+  }
+
+  // Truncate to the node title field length limit (255).
+  $title = mb_substr($title, 0, 255);
+  $node->set($title_field, $title);
+}
+
+/**
+ * Resolves the site location string for a Site Record node.
+ *
+ * Reads field_site_location. If the value is "~Other..." then the value of
+ * field_site_location_other is used instead.
+ *
+ * @param \Drupal\node\NodeInterface $node
+ *   The Site Record node.
+ *
+ * @return string
+ *   The resolved site location string, or '' if not available.
+ */
+function site_record_name_resolve_site_location(NodeInterface $node): string {
+  if (!$node->hasField('field_site_location') || $node->get('field_site_location')->isEmpty()) {
+    return '';
+  }
+
+  $value = $node->get('field_site_location')->first()->getValue();
+  $main = '';
+  if (isset($value['target_id'])) {
+    // field_site_location is an entity_reference to node. Load the referenced
+    // node and use its label as the site location name.
+    $referenced = \Drupal::entityTypeManager()->getStorage('node')->load($value['target_id']);
+    $main = $referenced ? (string) $referenced->label() : '';
+  }
+  elseif (isset($value['value'])) {
+    $main = (string) $value['value'];
+  }
+
+  if ($main === '~Other...' || $main === '~Other…') {
+    if ($node->hasField('field_site_location_other') && !$node->get('field_site_location_other')->isEmpty()) {
+      $other = $node->get('field_site_location_other')->first()->getValue();
+      return isset($other['value']) ? (string) $other['value'] : '';
+    }
+  }
+
+  return $main;
+}
+
+/**
+ * Resolves the arrival start date string for a Site Record node.
+ *
+ * Reads the start date value from field_arrival and formats it as
+ * YYYY-mm-dd.
+ *
+ * @param \Drupal\node\NodeInterface $node
+ *   The Site Record node.
+ *
+ * @return string
+ *   The formatted start date, or '' if not available.
+ */
+function site_record_name_resolve_arrival(NodeInterface $node): string {
+  if (!$node->hasField('field_arrival') || $node->get('field_arrival')->isEmpty()) {
+    return '';
+  }
+
+  $value = $node->get('field_arrival')->first()->getValue();
+  if (empty($value['value'])) {
+    return '';
+  }
+
+  // Date/datetime fields store values in storage format. Convert to a
+  // DrupalDateTime and format as YYYY-mm-dd.
+  try {
+    $date = new \Drupal\Core\Datetime\DrupalDateTime($value['value']);
+    return $date->format('Y-m-d');
+  }
+  catch (\Exception $e) {
+    // Fall back to the raw value if it cannot be parsed.
+    return (string) $value['value'];
+  }
+}

@@ -1,0 +1,17 @@
+{{ include('@b5_dcg/includes/work_types_node_header.twig') }}
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-12">
+      <p class="fs-4 fw-bold">Description</p>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-12 border p-4">
+      {% if node.field_work_notes.value %}
+        <p>{{ node.field_work_notes.value | raw }}</p>
+      {% else %}
+        <p>No description available.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>

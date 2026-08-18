@@ -1,0 +1,7 @@
+name: Resident Notes Name
+type: module
+description: 'Hides the standard title field on the Resident Notes content type and auto-generates the title from the resident name and arrival date.'
+package: DCG
+core_version_requirement: ^11
+dependencies:
+  - drupal:node

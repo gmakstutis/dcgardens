@@ -1,0 +1,93 @@
+views_bulk_operations.action_config.vbo_export_generate_csv_action:
+  type: views_bulk_operations_action_config
+  label: 'Export to csv'
+  mapping:
+    file_scheme:
+      type: string
+    strip_tags:
+      type: boolean
+      label: 'Should HTML be stripped?'
+    field_override:
+      type: boolean
+    field_config:
+      type: sequence
+      label: 'Export to csv (field configs)'
+      sequence:
+        type: mapping
+        mapping:
+          active:
+            type: boolean
+          label:
+            type: label
+    separator:
+      type: string
+      label: 'CSV separator'
+
+views_bulk_operations.action_config.vbo_export_generate_xlsx_action:
+  type: views_bulk_operations_action_config
+  label: 'Export to xlsx'
+  mapping:
+    file_scheme:
+      type: string
+    strip_tags:
+      type: boolean
+      label: 'Should HTML be stripped?'
+    field_override:
+      type: boolean
+    field_config:
+      type: sequence
+      label: 'Export to xlsx (field configs)'
+      sequence:
+        type: mapping
+        mapping:
+          active:
+            type: boolean
+          label:
+            type: label
+
+views_bulk_operations.action_config.vbo_export_generate_pdf_action:
+  type: views_bulk_operations_action_config
+  label: 'Export to pdf'
+  mapping:
+    file_scheme:
+      type: string
+    strip_tags:
+      type: boolean
+      label: 'Should HTML be stripped?'
+    field_override:
+      type: boolean
+    field_config:
+      type: sequence
+      label: 'Export to pdf (field configs)'
+      sequence:
+        type: mapping
+        mapping:
+          active:
+            type: boolean
+          label:
+            type: label
+    orientation:
+      type: string
+    paper_size:
+      type: string
+
+views_bulk_operations.action_config.vbo_export_generate_doc_action:
+  type: views_bulk_operations_action_config
+  label: 'Export to doc'
+  mapping:
+    file_scheme:
+      type: string
+    strip_tags:
+      type: boolean
+      label: 'Should HTML be stripped?'
+    field_override:
+      type: boolean
+    field_config:
+      type: sequence
+      sequence:
+        type: mapping
+        mapping:
+          active:
+            type: boolean
+          label:
+            type: label

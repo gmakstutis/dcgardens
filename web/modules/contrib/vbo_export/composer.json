@@ -1,0 +1,12 @@
+{
+  "name": "drupal/vbo_export",
+  "description": "Views bulk export operations.",
+  "type": "drupal-module",
+  "license": "GPL-2.0+",
+  "require": {
+    "drupal/views_bulk_operations": "^3.5 || ^4.1 || ^4.2 || ^4.3",
+    "phpoffice/phpspreadsheet": "^5.0",
+    "phpoffice/phpword": "^1.4",
+    "dompdf/dompdf": "^1.0 | ^2.0 | ^3.0" 
+  }
+}

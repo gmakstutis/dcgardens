@@ -1,0 +1,19 @@
+uuid: 3830a6db-5e76-4e23-8df0-00e8b5b6146e
+langcode: en-gb
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_resident_address
+    - node.type.resident_notes
+id: node.resident_notes.field_resident_address
+field_name: field_resident_address
+entity_type: node
+bundle: resident_notes
+label: 'Resident Address'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string

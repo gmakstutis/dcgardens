@@ -1,0 +1,15 @@
+_core:
+  default_config_hash: HlN7eAN2N4JIHsYv56V4E7sqC9bS609KwvGFjyD_mgk
+langcode: en-gb
+uuid: 9935ad56-e1b1-45ce-af1e-c0629fb69818
+name: 'Dan Cross Gardens'
+mail: gmak@gmak.net
+slogan: ''
+page:
+  403: ''
+  404: ''
+  front: /site-records
+admin_compact_mode: false
+weight_select_max: 100
+default_langcode: en-gb
+mail_notification: null

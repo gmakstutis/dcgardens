@@ -1,0 +1,27 @@
+uuid: 0dbb3c2e-6bd6-4186-8b9e-4e7148b3545f
+langcode: en-gb
+status: true
+dependencies:
+  config:
+    - system.menu.account
+  module:
+    - system
+  theme:
+    - b5_dcg
+_core:
+  default_config_hash: BHcVp7kgUUP_aIDRLZvvgyj7M04lbK627LbIEhu-bjo
+id: b5_dcg_account_menu
+theme: b5_dcg
+region: nav_additional
+weight: -7
+provider: null
+plugin: 'system_menu_block:account'
+settings:
+  id: 'system_menu_block:account'
+  label: 'User account menu'
+  label_display: '0'
+  provider: system
+  level: 1
+  depth: 0
+  expand_all_items: false
+visibility: {  }

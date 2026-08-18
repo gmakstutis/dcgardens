@@ -1,0 +1,5 @@
+
+services:
+  Drupal\vbo_export\Hook\VboExportHooks:
+    class: Drupal\vbo_export\Hook\VboExportHooks
+    autowire: true

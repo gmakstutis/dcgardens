@@ -1,0 +1,7 @@
+capture:
+  version: VERSION
+  js:
+    js/camera_upload.js: {}
+  css:
+    theme:
+      css/camera_upload.css: {}

@@ -1,0 +1,20 @@
+uuid: 95749c70-2a45-46f1-b82c-3d61c5840874
+langcode: en-gb
+status: true
+dependencies:
+  theme:
+    - b5_dcg
+_core:
+  default_config_hash: Z3B4A_oXhycyspF2ep_Fa5Q2FrXkuO5Tqq-JnDmm6vQ
+id: b5_dcg_local_actions
+theme: b5_dcg
+region: content
+weight: -2
+provider: null
+plugin: local_actions_block
+settings:
+  id: local_actions_block
+  label: 'Primary admin actions'
+  label_display: '0'
+  provider: core
+visibility: {  }

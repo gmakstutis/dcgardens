@@ -1,0 +1,22 @@
+<div class="container mb-4 mt-4">
+  <div class="row">
+    <div class="col-12">
+      <h4>Site Record</h4>
+    </div>
+  </div>
+  <div class="row justify-content-between">
+    <div class="col-4">
+      <h2>{{ node.field_resident_name.value }}</h2>
+    </div>
+    <div class="col-8 text-end">
+      {% if logged_in %}
+      <div class="btn-group btn-group-sm" role="group" aria-label="Site Records Actions">
+        <a class="btn btn-success btn-small me-2" href="/node/add/site_record" role="button">Add Record</a>
+        <a class="btn btn-secondary btn-small" href="/node/{{ node.nid.value }}/edit" role="button">Edit Record</a>
+        <a class="btn btn-primary btn-small me-2" href="/site-records" role="button">List Records</a>
+        <a class="btn btn-danger btn-small" href="/node/{{ node.nid.value }}/delete" role="button">Delete Record</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>

@@ -1,0 +1,15 @@
+<tr>
+  <td>
+    <a href="node/{{ fields.nid.content }}">{{ fields.field_arrival.content }}</a><br />
+    <span class="fw-bold">{{ fields.field_resident_name.content }}</span><br />
+    {{ fields.field_resident_address.content }}<br />
+    {% if fields.field_site_location.content == "~Other..." %}
+      {{ fields.field_site_location_other.content }}
+    {% else %}
+      {{ fields.field_site_location.content }}
+    {% endif %}
+  </td>
+  <td>
+    {{ fields.field_description.content | truncate(150) }}...
+  </td>
+</tr>

@@ -1,0 +1,22 @@
+uuid: 321a8cf4-450e-450f-8634-0da20f036e93
+langcode: en-gb
+status: true
+dependencies:
+  module:
+    - system
+  theme:
+    - b5_dcg
+_core:
+  default_config_hash: e38pLDZHA4-kf2i3YTaAXxR4MUSOK625_CUx42_-W0Q
+id: b5_dcg_content
+theme: b5_dcg
+region: content
+weight: -1
+provider: null
+plugin: system_main_block
+settings:
+  id: system_main_block
+  label: 'Main page content'
+  label_display: '0'
+  provider: system
+visibility: {  }

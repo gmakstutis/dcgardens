@@ -1,0 +1,11 @@
+uuid: 0b12481f-229a-4359-9580-c50001b99486
+langcode: en-gb
+status: true
+dependencies:
+  config:
+    - node.type.site_record
+id: node.site_record
+target_entity_type_id: node
+target_bundle: site_record
+default_langcode: site_default
+language_alterable: false

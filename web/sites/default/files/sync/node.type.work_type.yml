@@ -1,0 +1,18 @@
+uuid: 7c9b3804-f3f7-46ed-8626-d936ed77ef6c
+langcode: en-gb
+status: true
+dependencies:
+  module:
+    - menu_ui
+third_party_settings:
+  menu_ui:
+    available_menus:
+      - main
+    parent: 'main:'
+name: 'Work Types'
+type: work_type
+description: null
+help: null
+new_revision: true
+preview_mode: 1
+display_submitted: false
