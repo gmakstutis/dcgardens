@@ -2,8 +2,10 @@
 
 namespace Drupal\camera_upload\Plugin\Field\FieldWidget;
 
+use Drupal\Component\Utility\Html;
 use Drupal\Core\Field\Attribute\FieldWidget;
 use Drupal\Core\Field\FieldItemListInterface;
+use Drupal\Core\Field\FieldStorageDefinitionInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\image\Plugin\Field\FieldWidget\ImageWidget;
@@ -11,11 +13,10 @@ use Drupal\image\Plugin\Field\FieldWidget\ImageWidget;
 /**
  * Plugin implementation of the 'camera_upload' widget.
  *
- * Adds a "Take Photo" button to the standard image widget. The button simply
- * clicks the managed_file element's own native file input, which already has
- * the core upload/AJAX handlers bound to it. A #process callback adds the
- * HTML `capture="environment"` attribute to that input so mobile browsers
- * open the rear camera directly when it is clicked.
+ * Extends the core Image widget with a "Take Photo" control and an explicit
+ * "Add another item" button. The add-more button uses the standard Drupal
+ * WidgetBase AJAX mechanism so new empty rows appear reliably on both
+ * desktop and mobile.
  */
 #[FieldWidget(
   id: 'camera_upload',
@@ -66,11 +67,146 @@ class CameraUploadWidget extends ImageWidget {
 
   /**
    * {@inheritdoc}
+   *
+   * Overrides FileWidget::formMultipleElements() to drive the number of
+   * rendered rows from the field state's items_count (like WidgetBase) and
+   * to add an "Add another item" button using WidgetBase's standard AJAX
+   * submit/callback. This gives a reliable "add another" on both desktop
+   * and mobile, independent of the file upload AJAX.
+   */
+  protected function formMultipleElements(FieldItemListInterface $items, array &$form, FormStateInterface $form_state) {
+    $field_name = $this->fieldDefinition->getName();
+    $parents = $form['#parents'];
+
+    // Load the items for form rebuilds from the field state.
+    $field_state = static::getWidgetState($parents, $field_name, $form_state);
+    if (isset($field_state['items'])) {
+      $items->setValue($field_state['items']);
+    }
+
+    $cardinality = $this->fieldDefinition->getFieldStorageDefinition()->getCardinality();
+    $is_unlimited = $cardinality === FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED;
+    $is_multiple = $is_unlimited || $cardinality > 1;
+
+    // Determine the number of widgets to display. For unlimited cardinality
+    // use items_count from field state so the "Add another item" button can
+    // grow the form; otherwise use the cardinality.
+    if ($is_unlimited) {
+      $max = $field_state['items_count'] ?? count($items);
+    }
+    else {
+      $max = $cardinality - 1;
+    }
+
+    $title = $this->fieldDefinition->getLabel();
+    $description = $this->getFilteredDescription();
+
+    $id_prefix = implode('-', array_merge($parents, [$field_name]));
+    $wrapper_id = Html::getUniqueId($id_prefix . '-add-more-wrapper');
+
+    $elements = [];
+
+    $delta = 0;
+    foreach ($items as $item) {
+      if ($delta > $max) {
+        break;
+      }
+      $element = [
+        '#title' => $title,
+        '#description' => $description,
+      ];
+      $element = $this->formSingleElement($items, $delta, $element, $form, $form_state);
+
+      if ($element) {
+        if ($is_multiple) {
+          $element['_weight'] = [
+            '#type' => 'weight',
+            '#title' => $this->t('Weight for row @number', ['@number' => $delta + 1]),
+            '#title_display' => 'invisible',
+            '#delta' => $max,
+            '#default_value' => $item->_weight ?: $delta,
+            '#weight' => 100,
+          ];
+        }
+        $elements[$delta] = $element;
+        $delta++;
+      }
+    }
+
+    $empty_single_allowed = ($cardinality == 1 && $delta == 0);
+    $empty_multiple_allowed = ($is_unlimited || $delta < $cardinality) && !$form_state->isProgrammed();
+
+    if ($empty_single_allowed || $empty_multiple_allowed) {
+      $items->appendItem();
+      $element = [
+        '#title' => $title,
+        '#description' => $description,
+      ];
+      $element = $this->formSingleElement($items, $delta, $element, $form, $form_state);
+      if ($element) {
+        $element['#required'] = ($element['#required'] && $delta == 0);
+        $elements[$delta] = $element;
+      }
+    }
+
+    if ($is_multiple) {
+      $elements['#file_upload_delta'] = $delta;
+      $elements['#type'] = 'details';
+      $elements['#open'] = TRUE;
+      $elements['#theme'] = 'file_widget_multiple';
+      $elements['#theme_wrappers'] = ['details'];
+      $elements['#process'] = [[\Drupal\file\Plugin\Field\FieldWidget\FileWidget::class, 'processMultiple']];
+      $elements['#title'] = $title;
+      $elements['#description'] = $description;
+      $elements['#field_name'] = $field_name;
+      $elements['#language'] = $items->getLangcode();
+      $field_settings = $this->getFieldSettings() + ['display_field' => NULL];
+      $elements['#display_field'] = (bool) $field_settings['display_field'];
+      $elements['#file_upload_title'] = $this->t('Add a new file');
+      $elements['#file_upload_description'] = [
+        '#theme' => 'file_upload_help',
+        '#description' => '',
+        '#upload_validators' => $elements[0]['#upload_validators'],
+        '#cardinality' => $cardinality,
+      ];
+      // Provide #max_delta and #cardinality for the addMoreAjax callback.
+      $elements['#max_delta'] = $delta;
+      $elements['#cardinality'] = $cardinality;
+    }
+
+    // Add the "Add another item" button for unlimited cardinality fields,
+    // using WidgetBase's standard AJAX submit/callback.
+    if ($is_unlimited && !$form_state->isProgrammed()) {
+      $elements['#prefix'] = '<div id="' . $wrapper_id . '">';
+      $elements['#suffix'] = '</div>';
+
+      $elements['add_more'] = [
+        '#type' => 'submit',
+        '#name' => strtr($id_prefix, '-', '_') . '_add_more',
+        '#value' => $this->t('Add another item'),
+        '#attributes' => ['class' => ['field-add-more-submit']],
+        '#button_type' => 'small',
+        '#limit_validation_errors' => [],
+        '#submit' => [[\Drupal\Core\Field\WidgetBase::class, 'addMoreSubmit']],
+        '#ajax' => [
+          'callback' => [\Drupal\Core\Field\WidgetBase::class, 'addMoreAjax'],
+          'wrapper' => $wrapper_id,
+          'effect' => 'fade',
+        ],
+        '#weight' => 1000,
+      ];
+    }
+
+    return $elements;
+  }
+
+  /**
+   * {@inheritdoc}
    */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
     $element = parent::formElement($items, $delta, $element, $form, $form_state);
 
-    // Add a "Take Photo" button rendered as a <label>. On mobile (especially
+    // Add a "Take Photo" control rendered as a <label>. On mobile (especially
     // iOS Safari) calling input.click() from JS within a button handler is
     // blocked because it is not treated as a user gesture. A <label for="...">
     // pointing at the file input is a native user gesture, so iOS opens the
@@ -87,44 +223,32 @@ class CameraUploadWidget extends ImageWidget {
       '#weight' => -20,
     ];
 
-    // Mark the managed_file element so our #process callback can find it and
-    // so the JS behaviour can locate the file input to click.
     $element['#attributes']['class'][] = 'camera-upload-managed-file';
     $element['#attached']['library'][] = 'camera_upload/capture';
 
-    // Append a #process callback that runs after the parent managed_file
-    // processing so we can add the HTML capture="environment" attribute to
-    // the real file input that core produced.
     $element['#process'][] = [static::class, 'processCaptureAttribute'];
 
     return $element;
   }
 
   /**
-   * Form API #process callback: adds capture="environment" to the upload input
-   * and hides the "Take Photo" button on rows that already have a file.
-   *
-   * Runs after the parent managed_file processing so the final FIDs are known.
+   * Form API #process callback: adds capture="environment" to the upload input,
+   * forces single-file mode, links the "Take Photo" label, and hides the
+   * "Take Photo" control on rows that already have a file.
    */
   public static function processCaptureAttribute(array $element, FormStateInterface $form_state, array &$form) {
     if (isset($element['upload'])) {
       $element['upload']['#attributes']['capture'] = 'environment';
-      // The core file/image widget sets #multiple on the upload input for
-      // unlimited cardinality fields. iOS Safari does not fire a change
-      // event reliably on a multiple+capture input, which prevents the AJAX
-      // upload from running after a photo is taken. Force single-file mode
-      // here so the browser opens the camera for one photo at a time and
-      // fires change correctly.
+      // Force single-file mode — iOS Safari does not fire change reliably on
+      // a multiple+capture input.
       $element['upload']['#multiple'] = FALSE;
 
-      // Link the "Take Photo" label to this input so clicking it is a native
-      // user gesture that opens the camera on iOS.
       if (isset($element['camera_capture']) && !empty($element['upload']['#id'])) {
         $element['camera_capture']['#attributes']['for'] = $element['upload']['#id'];
       }
     }
 
-    // Hide the "Take Photo" button when this row already has an uploaded file.
+    // Hide the "Take Photo" control when this row already has an uploaded file.
     $fids = $element['#value']['fids'] ?? ($element['fids']['#value'] ?? []);
     if (!empty($fids) && isset($element['camera_capture'])) {
       $element['camera_capture']['#access'] = FALSE;
